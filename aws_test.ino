@@ -70,7 +70,11 @@ const char aws_private_key[] =
 
 // ####### Adafruit UDP Settings
 unsigned int localPort = 2390;      // local port to listen for UDP packets
-IPAddress timeServer(129, 6, 15, 28); // time.nist.gov NTP server
+IPAddress timeServer(132, 163, 4, 101); // time.nist.gov NTP server
+// 129.6.15.28
+// 129.6.15.29
+// 129.6.15.30
+// 132.163.4.101
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 AdafruitUDP Udp; // A UDP instance to let us send and receive packets over UDP
@@ -86,7 +90,7 @@ void setup(){
 
   // Wait for the Serial Monitor to open
   // while (!Serial){
-  //   delay(1);  Delay required to avoid RTOS task switching problems 
+  //   delay(1);  //Delay required to avoid RTOS task switching problems 
   // };
 
   // #######  Setup for WICED WIFI
@@ -116,7 +120,7 @@ void setup(){
   Feather.printNetwork();  // Connected: Print network info
 
   //  ####### Connect to UDP Server
-  Serial.println("\nStarting connection to server...");
+  Serial.println("\nStarting connection to UDP server...");
   Udp.begin(localPort);
   sendNTPpacket(timeServer); // send an NTP packet to a time server
   delay(1000);// wait to see if a reply is available
@@ -143,7 +147,9 @@ void setup(){
     setTime(epoch);
     Serial.print("Now system time is set at: ");
     digitalClockDisplay();
-  };
+  } else {
+    Serial.println("Failed to get Internet Time!");
+  }
 
 // ####### AWS IoT settings
   // Tell the MQTT client to auto print error codes and halt on errors
@@ -301,7 +307,7 @@ String getDeviceStatus(){
   if (vbatADC > 2300)
   {
     
-    batStatus = "USB Power";
+    batStatus = "USB";
   } else {
     batStatus = vbatString;
   };
@@ -331,12 +337,12 @@ void mqtt_disconnect_callback(void)
 
 // ####### NTP function, send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address){
-  //Serial.println("1");
+  Serial.println("1");
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request
   // (see URL above for details on the packets)
-  //Serial.println("2");
+  Serial.println("2");
   packetBuffer[0] = 0b11100011;   // LI, Version, Mode
   packetBuffer[1] = 0;     // Stratum, or type of clock
   packetBuffer[2] = 6;     // Polling Interval
@@ -347,16 +353,16 @@ unsigned long sendNTPpacket(IPAddress& address){
   packetBuffer[14]  = 49;
   packetBuffer[15]  = 52;
 
-  //Serial.println("3");
+  Serial.println("3");
 
   // all NTP fields have been given values, now
   // you can send a packet requesting a timestamp:
   Udp.beginPacket(address, 123); //NTP requests are to port 123
-  //Serial.println("4");
+  Serial.println("4");
   Udp.write(packetBuffer, NTP_PACKET_SIZE);
-  //Serial.println("5");
+  Serial.println("5");
   Udp.endPacket();
-  //Serial.println("6");
+  Serial.println("6");
 }
 
 // ####### Function for DS18B20
@@ -407,8 +413,5 @@ String getReadings(){
     res += fahrenheit;
     res += "}";
     return res;
-  } else {
-    String err = "{\"celsius\": null, \"fahrenheit\": null}";
-    return err;
-  }
+  } 
 }  
