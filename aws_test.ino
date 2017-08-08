@@ -24,6 +24,9 @@
 const long interval = 5000; 
 unsigned long previousMillis = 0;
 
+// ####### OnBoard LED
+const int onBoardLed = PA15;
+
 // ####### Initiate OneWire
 OneWire  ds(PC3);  // on pin PC3 (a 4.7K resistor is necessary)
 
@@ -38,6 +41,8 @@ AdafruitMQTT mqtt;
 #define AWS_IOT_MQTT_CLIENT_ID         "test_wiced"
 #define AWS_IOT_MY_THING_NAME          "test_wiced"
 #define AWS_IOT_MQTT_TOPIC             "/things/test_wiced/test"
+#define MQTT_QOS_AT_MOST_ONCE           0
+#define MQTT_QOS_AT_LEAST_ONCE          1
 
 const char aws_private_key[] = 
 "-----BEGIN RSA PRIVATE KEY-----\n"
@@ -86,6 +91,8 @@ AdafruitUDP Udp; // A UDP instance to let us send and receive packets over UDP
 /**************************************************************************/
 void setup(){
   pinMode(PA1, INPUT_ANALOG); 
+  pinMode(onBoardLed, OUTPUT);
+
   Serial.begin(115200);
 
   // Wait for the Serial Monitor to open
@@ -167,9 +174,9 @@ void setup(){
   Serial.printf("Connecting to " AWS_IOT_MQTT_HOST " port %d ... ", AWS_IOT_MQTT_PORT);
   mqtt.connectSSL(AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
   Serial.println("OK");
-  Serial.print("Subscribing to " AWS_IOT_MQTT_TOPIC " ... ");
-  mqtt.subscribe(AWS_IOT_MQTT_TOPIC, MQTT_QOS_AT_MOST_ONCE, subscribed_callback); // Will halted if an error occurs
-  Serial.println("OK");
+  // Serial.print("Subscribing to " AWS_IOT_MQTT_TOPIC " ... ");
+  // mqtt.subscribe(AWS_IOT_MQTT_TOPIC, MQTT_QOS_AT_MOST_ONCE, subscribed_callback); // Will halted if an error occurs
+  // Serial.println("OK");
 }
   
 /**************************************************************************/
@@ -186,12 +193,12 @@ void loop(){
     String payload = "{ \"d\": ";
     payload += getDeviceStatus();
     payload += ", \"sensor\": {\"temperature\": ";
+    digitalWrite(onBoardLed, HIGH);
     payload += getReadings();
+    digitalWrite(onBoardLed, LOW);
     payload += "}, \"timestamp\": ";
     payload += epoch;
     payload += "}}";
-    Serial.println();
-    Serial.print("Sending payload: ");
 
     mqtt.publish(AWS_IOT_MQTT_TOPIC, (char*) payload.c_str(), MQTT_QOS_AT_LEAST_ONCE); // Will halted if an error occurs
 
