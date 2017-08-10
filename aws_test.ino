@@ -187,8 +187,6 @@ void setup(){
 void loop(){
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis; // save the last time the cycle is run
-
     unsigned long epoch = now();
     String payload = "{ \"d\": ";
     payload += getDeviceStatus();
@@ -203,6 +201,7 @@ void loop(){
     mqtt.publish(AWS_IOT_MQTT_TOPIC, (char*) payload.c_str(), MQTT_QOS_AT_LEAST_ONCE); // Will halted if an error occurs
 
   // FORMAT: { "d": {"status": {"battery_lvl": "USB Power", "wifi_signal": "-63"}, "sensor": {"temperature" : "XX"}, "timestamp": 1500258681}}
+    previousMillis = currentMillis; // save the last time the cycle is run
   }
 }
 
