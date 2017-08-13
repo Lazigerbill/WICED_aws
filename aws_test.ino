@@ -15,6 +15,7 @@
 #include <Time.h> 
 #include <TimeLib.h>
 #include <OneWire.h>
+#include <libmaple/iwdg.h>
 
 /**************************************************************************/
 /*!
@@ -124,10 +125,13 @@ void setup(){
   Feather.setDisconnectCallback(wifi_disconnect_callback); // Set disconnection callback
   Serial.println("Attempting to connect with saved profile");
   while ( !connectAP() ){
-    delay(500); // delay between each attempt
+    delay(60000); // delay 60sec between each attempt
   };
   Feather.printNetwork();  // Connected: Print network info
 
+  // ####### Initiate independent WatchDog
+  iwdg_init(IWDG_PRE_256, 9375); // init an 60 second wd timer
+  
   //  ####### Connect to UDP Server
   Serial.println("\nStarting connection to UDP server...");
   Udp.begin(localPort);
@@ -206,6 +210,7 @@ void loop(){
     payload += "}}";
 
     mqtt.publish(AWS_IOT_MQTT_TOPIC, (char*) payload.c_str(), MQTT_QOS_AT_LEAST_ONCE); // Will halted if an error occurs
+    iwdg_feed();
 
   // FORMAT: { "d": {"status": {"battery_lvl": "USB Power", "wifi_signal": "-63"}, "sensor": {"temperature" : "XX"}, "timestamp": 1500258681}}
     previousMillis = currentMillis; // save the last time the cycle is run
@@ -249,6 +254,8 @@ void wifi_disconnect_callback(void)
   Serial.println("DISCONNECTED FROM WIFI");
   Serial.println("-----------------------------");
   Serial.println();
+  iwdg_init(IWDG_PRE_256, 156); //reset
+  while(1);
 }
 
 bool connectAP(void)
