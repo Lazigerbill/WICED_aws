@@ -1,7 +1,9 @@
 /*
 
  ####### THIS IS A WORKING VERSION FOR WICED TO SET NTP TIME THROUGH WIFI #######
-  ####### check battery and wifi status #######
+ ####### connect wifi through pre-configured AP #######
+ ####### connect NIST through UDP to set RTC #######
+  ####### check battery and wifi signal strength #######
   ####### read temperature from DS18B20 #######
   ####### MQTT to AWS #######
 
@@ -21,7 +23,7 @@
 /**************************************************************************/
 
 // ####### MQTT interval
-const long interval = 5000; 
+const long interval = 10000; 
 unsigned long previousMillis = 0;
 
 // ####### OnBoard LED
@@ -41,8 +43,8 @@ AdafruitMQTT mqtt;
 #define AWS_IOT_MQTT_CLIENT_ID         "test_wiced"
 #define AWS_IOT_MY_THING_NAME          "test_wiced"
 #define AWS_IOT_MQTT_TOPIC             "/things/test_wiced/test"
-#define MQTT_QOS_AT_MOST_ONCE           0
-#define MQTT_QOS_AT_LEAST_ONCE          1
+#define LWT_WORKAROUND_TOPIC           "/things/test_wiced/shadow/update"
+#define AWS_IOT_SHADOW_UPDATE          "$aws/things/test_wiced/shadow/update"
 
 const char aws_private_key[] = 
 "-----BEGIN RSA PRIVATE KEY-----\n"
@@ -170,13 +172,18 @@ void setup(){
   Feather.useDefaultRootCA(true);
   // Setting Indentity with AWS Private Key & Certificate
   mqtt.tlsSetIdentity(aws_private_key, local_cert, LOCAL_CERT_LEN);
+  // LWT
+  String lwt = "{\"state\": {\"reported\":{\"connected\":\"false\"}}}";
+  mqtt.will(LWT_WORKAROUND_TOPIC , (char*) lwt.c_str(), MQTT_QOS_AT_LEAST_ONCE);
   // Connect with SSL/TLS
   Serial.printf("Connecting to " AWS_IOT_MQTT_HOST " port %d ... ", AWS_IOT_MQTT_PORT);
   mqtt.connectSSL(AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
-  Serial.println("OK");
-  // Serial.print("Subscribing to " AWS_IOT_MQTT_TOPIC " ... ");
-  // mqtt.subscribe(AWS_IOT_MQTT_TOPIC, MQTT_QOS_AT_MOST_ONCE, subscribed_callback); // Will halted if an error occurs
-  // Serial.println("OK");
+  if (mqtt.connected()) {
+    delay(3000);
+    Serial.println("connected!");
+    String shadowUpdate = "{\"state\": {\"reported\":{\"connected\":\"true\"}}}";
+    mqtt.publish(AWS_IOT_SHADOW_UPDATE, (char*) shadowUpdate.c_str(), MQTT_QOS_AT_LEAST_ONCE);
+  }
 }
   
 /**************************************************************************/

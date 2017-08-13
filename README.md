@@ -1,4 +1,4 @@
-#Paramount trial
+# Paramount trial
 
 ## Hardware setup:
 1. WICED board
@@ -20,3 +20,8 @@
     - [X]sensor data (accumlative)
     - [ ]real-time data, pubish every 5 seconds, change that to 10 seconds
       data: [{ts: xxx, temp: xxx}, {ts: xxx, temp: xxx},...]
+
+*client take-over confuses the life cycle priofity...it may appears that disconnection happned after connection, indeed it is connected.
+*keepalive in the adafruit MQTT library is not working, default seems to be 90sec(1.5 times 1 min)
+*not sure about the frequency of pingreq some says 30sec on forums
+**solution. upon connect, wait 1 second before publish connected:true to shadow update! currently disconnect is about 30ms after connect.
